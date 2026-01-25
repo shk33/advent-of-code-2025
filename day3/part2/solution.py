@@ -1,33 +1,25 @@
 import os
 
-def find_max_subsequence(line, k):
+def solve_line(line):
     """
-    Finds the lexicographically largest subsequence of length k.
+    Finds the largest 12-digit number in a line.
     """
-    if len(line) < k or k == 0:
-        return "0" * k
+    n = len(line)
+    k = 12
+    to_remove = n - k
+    res = []
 
-    result_chars = []
-    current_start_index = 0
-    
-    for i in range(k):
-        remaining_to_find = k - i
-        search_end_index = len(line) - remaining_to_find
+    for digit in line:
+        while res and digit > res[-1] and to_remove > 0:
+            res.pop()
+            to_remove -= 1
+        res.append(digit)
+
+    while to_remove > 0:
+        res.pop()
+        to_remove -= 1
         
-        best_digit = -1
-        best_digit_index = -1
-
-        # Find the best digit in the current search window
-        for j in range(current_start_index, search_end_index + 1):
-            digit = int(line[j])
-            if digit > best_digit:
-                best_digit = digit
-                best_digit_index = j
-        
-        result_chars.append(str(best_digit))
-        current_start_index = best_digit_index + 1
-
-    return "".join(result_chars)
+    return int("".join(res))
 
 def solve():
     """
@@ -38,17 +30,14 @@ def solve():
         lines = f.readlines()
 
     total_joltage = 0
-    k = 12 # Number of digits to select
-
     for line in lines:
         line = line.strip()
         if not line:
             continue
         
-        max_line_joltage_str = find_max_subsequence(line, k)
-        total_joltage += int(max_line_joltage_str)
+        total_joltage += solve_line(line)
         
-    print(f"The total output joltage is: {total_joltage}")
+    print(f"The new total output joltage is: {total_joltage}")
 
 if __name__ == "__main__":
     solve()

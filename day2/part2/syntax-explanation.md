@@ -190,3 +190,85 @@ The Clojure solution maintains its functional style with `loop/recur` for iterat
 - **Nested `loop/recur`**: The generation logic is implemented using nested `loop/recur` calls, mirroring the structure of the two `while` loops in other languages.
 - **`into`**: This function efficiently merges two collections. Here, it takes the `invalid-ids` accumulated so far and combines them with the `generated-for-base` (the IDs generated for the current `base_s`).
 - **Functional Paradigm**: The `generate-invalid-ids` function exemplifies the functional approach: it recursively builds a new list by transforming existing data, rather than mutating an `invalid_ids` variable directly.
+
+---
+
+## Rust Solution (`solution.rs`)
+
+The Rust solution uses `u128` for integers and nested `loop`s, mirroring the `while true` constructs in Python or JavaScript.
+
+```rust
+fn generate_invalid_ids(max_id: u128) -> Vec<u128> {
+    let mut invalid_ids = Vec::new();
+    let mut base_num = 1;
+
+    loop { // Outer loop for base_num
+        let base_s = base_num.to_string();
+        
+        let first_repetition_val: u128 = (base_s.clone() + &base_s).parse().unwrap();
+        if first_repetition_val > max_id {
+            break;
+        }
+
+        let mut current_repeated_s = base_s.clone();
+        
+        loop { // Inner loop for repetitions
+            current_repeated_s += &base_s;
+            let n_invalid: u128 = current_repeated_s.parse().unwrap();
+
+            if n_invalid > max_id {
+                break;
+            }
+            invalid_ids.push(n_invalid);
+        }
+        
+        base_num += 1;
+    }
+    invalid_ids
+}
+```
+
+- **`loop`**: Rust's `loop` is the idiomatic way to create an infinite loop that can be exited with `break`.
+- **`String` vs. `&str`**:
+    - `base_s` is an owned `String`.
+    - `current_repeated_s += &base_s;` appends a string slice (`&str`) to the owned `String`. This is more efficient than creating a new `String` for the append operation.
+- **`.parse::<u128>()`**: The `.parse()` method is a generic function that can parse a string into any type that implements the `FromStr` trait. `u128` implements this trait. Here, type inference could figure it out, but `::<u128>` is an explicit annotation for clarity. `.unwrap()` is used to get the value, assuming parsing always succeeds.
+
+---
+
+## Elixir Solution (`solution.exs`)
+
+The Elixir solution elegantly composes `Stream`s and other functional constructs to generate the required numbers.
+
+```elixir
+def generate_invalid_ids(max_id) do
+  Stream.iterate(1, &(&1 + 1)) # -> 1, 2, 3, ...
+  |> Stream.map(&Integer.to_string/1) # -> "1", "2", ...
+  |> Stream.transform({:cont, ""}, fn base_s, _ ->
+    # This transform generates the repetitions for each base_s
+    repeated_stream =
+      Stream.iterate(base_s, &(&1 <> base_s)) # -> "1", "11", "111", ...
+      |> Stream.map(&String.to_integer/1)
+      |> Stream.take_while(&(&1 <= max_id))
+
+    # Optimization check
+    first_rep = String.to_integer(base_s <> base_s)
+    if first_rep > max_id do
+      {:halt, nil} # Stop the entire stream
+    else
+      {repeated_stream, nil} # Emit the stream of repeated numbers
+    end
+  end)
+  |> Stream.flat_map(&(&1)) # Flattens the streams of streams into one stream
+  |> Enum.to_list()
+end
+```
+
+- **`Stream.iterate/2`**: Lazily generates an infinite sequence of numbers.
+- **`Stream.transform/3`**: A powerful but complex function that allows you to manage state and emit values in a stream. Here it's used to:
+    1.  Take a `base_s` (like "12").
+    2.  Create an inner `repeated_stream` for it (e.g., `1212`, `121212`).
+    3.  Perform the optimization check and `halt` the entire process if needed.
+    4.  Emit the `repeated_stream` itself as a value.
+- **`Stream.flat_map/2`**: The `transform` call produces a stream of streams (e.g., `<stream for "1">, <stream for "2">, ...`). `flat_map` takes this structure and flattens it into a single, continuous stream of all the generated numbers.
+- **Composition**: This solution is a prime example of functional composition. Instead of nested imperative loops, it builds a lazy pipeline of stream transformations that efficiently generates the desired result.

@@ -223,3 +223,137 @@ func main() {
 5.  **The JVM and Java Interop**:
     - Clojure runs on the JVM, giving it two major benefits: it's battle-tested, high-performance, and has access to the entire universe of Java libraries.
     - `(Integer/parseInt (subs line 1))` is a direct example of this. It's calling the static `parseInt` method on the `java.lang.Integer` class. The syntax is `(JavaClassName/staticMethod args...)`.
+
+---
+
+## Rust: `solution.rs` (Special Emphasis)
+
+**Paradigm**: Rust is a **statically-typed, compiled language** focused on **performance, reliability, and memory safety**. Its key innovation is the **ownership and borrowing** system, which guarantees memory safety without needing a garbage collector like in JS, Go, or Java. This gives it the performance of C++ with much stronger safety guarantees.
+
+```rust
+use std::fs;
+
+// A pure function. Types are explicit.
+fn solve(rotations: &str) -> i32 {
+    let mut current_position = 50;
+    let mut zero_count = 0;
+
+    for line in rotations.lines() {
+        let direction = line.chars().next().unwrap();
+        let distance: i32 = line[1..].parse().unwrap();
+
+        current_position += if direction == 'R' { distance } else { -distance };
+        current_position = current_position.rem_euclid(100);
+
+        if current_position == 0 {
+            zero_count += 1;
+        }
+    }
+    zero_count
+}
+
+fn main() {
+    let input = fs::read_to_string("day1/part1/input1.txt").expect("Error reading file");
+    let password = solve(&input);
+    println!("The password is: {}", password);
+}
+```
+
+#### Deeper Concepts vs. JavaScript
+
+1.  **Static Typing & Type Inference**:
+    - Like Go, all types must be known at compile time.
+    - `let distance: i32 = ...` is an explicit type annotation for a 32-bit signed integer.
+    - Often, the compiler can infer the type, so you can write `let password = solve(&input);` without an explicit type, just like in Go.
+
+2.  **Ownership and Borrowing**: This is Rust's most unique feature.
+    - **Ownership**: Each value in Rust has a single "owner." When the owner goes out of scope, the value is dropped (memory is freed). `let s1 = String::from("hello"); let s2 = s1;` **moves** ownership. `s1` can no longer be used. This prevents "double free" errors.
+    - **Borrowing**: Instead of moving ownership, you can create "references" (borrows) to a value. This is what the `&` symbol does. `solve(&input)` passes a reference to the `input` string, so `solve` can read it without taking ownership and destroying it.
+    - **Benefit**: This system provides C++-level performance (no garbage collector pauses) while making it impossible to have memory bugs like dangling pointers or data races at compile time.
+
+3.  **Mutability**:
+    - Variables are **immutable by default**.
+    - `let x = 5; x = 6;` is a compile-time error.
+    - To make a variable mutable, you must explicitly use the `mut` keyword: `let mut zero_count = 0;`. This makes the code's intent clearer.
+
+4.  **Error Handling: `Result` and `Option`**:
+    - Like Go, Rust rejects `try...catch`. It uses two special generic enums (sum types) for handling operations that might fail.
+    - **`Option<T>`**: Represents a value that can be something (`Some(T)`) or nothing (`None`). It's used when a value might not exist. `line.chars().next()` returns an `Option<char>`. This is like a nullable type that you are forced to handle.
+    - **`Result<T, E>`**: Represents a value that can be success (`Ok(T)`) or failure (`Err(E)`). `fs::read_to_string` returns a `Result<String, io::Error>`.
+    - **`.unwrap()` and `.expect()`**: These are shortcuts to get the value out of an `Option` or `Result`. If the value is `None` or `Err`, the program will **panic** (crash). This is fine for quick scripts but in robust applications, you would use `match` or `if let` to handle the error cases gracefully. `expect("message")` is like `unwrap()` but with a custom error message.
+
+5.  **Expressions vs. Statements**:
+    - In Rust, nearly everything is an **expression**, meaning it returns a value.
+    - `if`, `match`, and even code blocks `{}` are expressions.
+    - This allows for very concise code: `let value = if condition { 1 } else { 0 };`. This is similar to a ternary operator in JS (`condition ? 1 : 0`).
+
+---
+
+## Elixir: `solution.exs` (Special Emphasis)
+
+**Paradigm**: Elixir is a **dynamic, functional programming language** built on the **Erlang VM (BEAM)**. It is designed for building highly scalable, fault-tolerant, and concurrent applications. Its syntax is heavily inspired by Ruby.
+
+```elixir
+defmodule Solution do
+  # The main 'solve' function is pure.
+  def solve(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.reduce({50, 0}, fn line, {position, zero_count} ->
+      direction = String.first(line)
+      distance = String.slice(line, 1..-1) |> String.to_integer()
+
+      new_position =
+        if direction == "R" do
+          position + distance
+        else
+          position - distance
+        end
+
+      wrapped_position = rem(new_position, 100)
+
+      new_zero_count =
+        if wrapped_position == 0 do
+          zero_count + 1
+        else
+          zero_count
+        end
+
+      {wrapped_position, new_zero_count}
+    end)
+    |> elem(1) # Get the second element (zero_count) from the final tuple.
+  end
+end
+
+input = File.read!("day1/part1/input1.txt")
+password = Solution.solve(input)
+IO.puts("The password is: #{password}")
+```
+
+#### Deeper Concepts vs. JavaScript
+
+1.  **Immutability and Functional Purity**:
+    - Like Clojure, all data in Elixir is **immutable**. You don't "change" data, you create new data through transformations.
+    - This makes it a functional language at its core. Functions are predictable and easy to test.
+
+2.  **The Pipe Operator `|>`**:
+    - This is the most iconic feature of Elixir. It takes the result of the expression on its left and passes it as the **first argument** to the function on its right.
+    - `c(b(a))` becomes `a |> b |> c`.
+    - It makes data transformation pipelines extremely readable, from top to bottom.
+
+3.  **Pattern Matching**:
+    - The `=` sign in Elixir is not assignment, it's a **match operator**.
+    - `x = 1` asserts "I expect `x` to be equal to 1." If `x` was already `2`, this would throw an error.
+    - It's most powerful with data structures. ` {position, zero_count} = {50, 0} ` destructures the tuple into two variables. This is like JS destructuring: `const [position, zero_count] = [50, 0];`.
+    - It's used heavily in function heads to define different function clauses for different input patterns, which is a powerful alternative to `if` or `switch` statements.
+
+4.  **Modules and Functions**:
+    - Code is organized into **modules** (`defmodule`).
+    - Functions are defined with `def` (public) or `defp` (private).
+    - There is no `return` keyword; the last expression's value is implicitly returned, just like in Ruby.
+
+5.  **The Erlang VM (BEAM) and Concurrency**:
+    - The true power of Elixir comes from its runtime environment, the BEAM, which has been used for decades to build ultra-reliable telecom systems.
+    - It's famous for its **lightweight "processes"** (not OS processes). You can have millions of them running concurrently. They are isolated, communicate via messages, and if one crashes, it doesn't take down the others.
+    - This makes Elixir an incredible choice for web servers, real-time applications, and distributed systems. While not used in this simple script, it's the primary reason to choose Elixir.
+```

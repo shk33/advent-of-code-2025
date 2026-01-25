@@ -24,6 +24,8 @@ We are solving each problem part using the following languages:
 *   **Go**
 *   **Ruby**
 *   **Clojure**
+*   **Rust**
+*   **Elixir**
 
 ## Methodology
 
@@ -81,4 +83,20 @@ Requires a Clojure installation (e.g., the `clj` command-line tool).
 
 ```bash
 clj -M day1/part1/solution.clj
+```
+
+### Rust
+
+Requires the Rust toolchain (including `rustc` and `cargo`).
+
+```bash
+rustc day1/part1/solution.rs -o solution_rs && ./solution_rs
+```
+
+### Elixir
+
+Requires an Elixir installation.
+
+```bash
+elixir day1/part1/solution.exs
 ```

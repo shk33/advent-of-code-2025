@@ -167,3 +167,69 @@ Clojure has built-in support for arbitrary-precision integers, so large numbers 
 - **`bigint`**: This function explicitly converts a string or number into an arbitrary-precision integer.
 - **`transient` / `persistent!`**: A performance optimization. Clojure's immutable data structures have some overhead. For tight loops where a collection is being built up, you can use a `transient` version, which temporarily allows mutations internally. Once the loop is done, `persistent!` converts it back to a normal, immutable set. This provides the speed of mutable structures within a controlled scope, without sacrificing overall immutability.
 - **`(reduce + found-ids)`**: A beautiful example of Clojure's elegance. Since `+` is just a function, it can be passed directly to `reduce` to sum all the items in the `found-ids` collection.
+
+---
+
+## Rust Solution (`solution.rs`)
+
+Rust does not have a built-in `BigInt` type in its standard library. The common way to handle this is by using the `num-bigint` crate (a third-party library). However, to solve this without external dependencies, we can represent large numbers as `String`s and implement the necessary comparison logic. For this solution, the `u128` type, an unsigned 128-bit integer, is large enough to hold all the numbers in this specific problem, avoiding the complexity of a full `BigInt` implementation.
+
+```rust
+use std::collections::HashSet;
+
+fn solve(input: &str) -> u128 {
+    // ...
+    let mut found_invalid_ids = HashSet::new();
+
+    for invalid_id in potential_ids {
+        for range in &ranges {
+            if range.0 <= invalid_id && invalid_id <= range.1 {
+                found_invalid_ids.insert(invalid_id);
+                break;
+            }
+        }
+    }
+    
+    found_invalid_ids.iter().sum()
+}
+```
+- **`u128`**: An unsigned integer type that can hold values up to `2^128 - 1`. This is a very large number, sufficient for this problem's constraints. Using a fixed-size integer is significantly faster than a `BigInt` type.
+- **`HashSet`**: Rust's equivalent of a `Set`. It's part of the standard collections library and provides an efficient way to store unique values.
+- **`found_invalid_ids.iter().sum()`**: This is a classic example of Rust's iterator pattern.
+    - `.iter()`: Creates an iterator over the items in the `HashSet`.
+    - `.sum()`: A method available on iterators of numeric types. It consumes the iterator and returns the sum of all its items. This is a highly efficient and idiomatic way to perform the final calculation.
+
+---
+
+## Elixir Solution (`solution.exs`)
+
+Like Python and Ruby, Elixir has built-in support for arbitrary-precision integers, so no special handling is needed. The solution is composed as a pipeline of data transformations.
+
+```elixir
+defmodule Solution do
+  def solve(input) do
+    {ranges, max_id} = parse_ranges(input)
+    
+    1..max_id
+    |> Stream.map(&Integer.to_string/1)
+    |> Stream.map(fn s -> s <> s end)
+    |> Stream.map(&String.to_integer/1)
+    |> Stream.filter(fn id -> id <= max_id end)
+    |> Enum.reduce(MapSet.new(), fn invalid_id, acc ->
+      if Enum.any?(ranges, fn {start_range, end_range} ->
+           start_range <= invalid_id && invalid_id <= end_range
+         end) do
+        MapSet.put(acc, invalid_id)
+      else
+        acc
+      end
+    end)
+    |> Enum.sum()
+  end
+end
+```
+- **`Stream`**: This is a key module for lazy processing. `Stream.map` and `Stream.filter` don't create intermediate lists. They create a "recipe" for the computation. The computation is only performed when the stream is passed to an eager module like `Enum`. This is extremely memory-efficient for large sequences.
+- **`&` Capture Syntax**: `&Integer.to_string/1` is a shorthand for creating an anonymous function. It's equivalent to `fn s -> Integer.to_string(s) end`. The `&1` would represent the first argument, `&2` the second, and so on. `&/1` specifies the arity (number of arguments) of the function being captured.
+- **`MapSet`**: Elixir's `Set` implementation. It's used here to store the unique invalid IDs found within the ranges.
+- **`Enum.any?`**: A convenient function that checks if at least one element in a collection returns `true` for the given function. This is used to efficiently check if the `invalid_id` falls into any of the ranges.
+- **Pipelined Logic**: The `solve` function is a great example of the pipe operator `|>` creating a highly readable, top-to-bottom flow of data transformations, starting from the raw input and ending with the final sum.

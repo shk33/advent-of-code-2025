@@ -138,3 +138,64 @@ Like Go, Clojure requires using Java's `Math/floor` for this type of division, a
 - **Java Interop**: We rely on Java's `Math.floor` method for the calculation.
 - **Type Hinting**: `(double a)` converts the integer `a` to a floating-point `double` before division. `(int ...)` truncates the final result back to an integer. This explicit type conversion is necessary for the interop to work correctly.
 - **Functional Purity**: The structure remains highly functional. The new `zeros-this-turn` is calculated and threaded through the `recur` call into the next iteration's accumulator (`total-zero-count`), preserving the immutable nature of the loop.
+
+---
+
+## Rust Solution (`solution.rs`)
+
+Rust's standard library includes `div_euclid` and `rem_euclid` for mathematically correct Euclidean division, which simplifies the logic significantly.
+
+```rust
+fn solve(rotations: &str) -> i32 {
+    let mut current_position = 50;
+    let mut total_zero_count = 0;
+
+    for line in rotations.lines() {
+        // ... (parsing logic) ...
+        let zeros_this_turn = if direction == 'R' {
+            (current_position + distance).div_euclid(100) - current_position.div_euclid(100)
+        } else {
+            (current_position - 1).div_euclid(100) - (current_position - distance - 1).div_euclid(100)
+        };
+        total_zero_count += zeros_this_turn;
+
+        current_position += if direction == 'R' { distance } else { -distance };
+    }
+    total_zero_count
+}
+// ... (main function is the same)
+```
+- **`.div_euclid()`**: This method performs Euclidean division, which is exactly what's needed for this problem, especially with negative numbers. It behaves like floor division for positive divisors. This avoids the need for a custom helper function or floating-point math, leading to a very clean and robust solution.
+
+---
+
+## Elixir Solution (`solution.exs`)
+
+Elixir, running on the Erlang VM, provides the `div` function from its `:erlang` module for integer division that truncates towards negative infinity (floor division).
+
+```elixir
+defmodule Solution do
+  def solve(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.reduce({50, 0}, fn line, {position, total_zero_count} ->
+      # ... (parsing logic) ...
+      zeros_this_turn =
+        if direction == "R" do
+          div(position + distance, 100) - div(position, 100)
+        else
+          div(position - 1, 100) - div(position - distance - 1, 100)
+        end
+
+      new_position = if direction == "R", do: position + distance, else: position - distance
+      new_total_zero_count = total_zero_count + zeros_this_turn
+
+      {new_position, new_total_zero_count}
+    end)
+    |> elem(1)
+  end
+end
+# ... (main function is the same)
+```
+- **`div/2`**: The built-in `div` function in Elixir performs integer division that floors the result, making it a perfect fit for this problem's logic, similar to Python's `//`.
+- **Functional Approach**: The solution remains purely functional, piping the input through a `reduce` operation. Each step of the `reduce` calculates the newly passed zeros and the new "unwrapped" position, passing them to the next iteration in an immutable tuple `{new_position, new_total_zero_count}`.

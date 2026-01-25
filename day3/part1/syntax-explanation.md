@@ -122,3 +122,63 @@ end
     2.  `(map #(Integer/parseInt %))` takes that sequence and applies the `Integer/parseInt` function to each string, producing a sequence of numbers. The `#(...)` is a shorthand for an anonymous function, where `%` is the argument.
     3.  `(apply max 0)` takes the sequence of numbers and "applies" them as arguments to the `max` function. `max` finds the largest of its arguments. We include `0` in case the input sequence is empty.
 -   **Immutability**: No variables are reassigned. Each step transforms the data from the previous step into a new sequence.
+
+---
+
+## 5. Rust Solution
+
+```rust
+// solution.rs
+
+fn get_max_joltage_for_line(line: &str) -> i32 {
+    let mut max_line_joltage = 0;
+    let chars: Vec<char> = line.chars().collect();
+    for i in 0..chars.len() {
+        for j in i + 1..chars.len() {
+            let joltage_str = format!("{}{}", chars[i], chars[j]);
+            let joltage: i32 = joltage_str.parse().unwrap();
+            if joltage > max_line_joltage {
+                max_line_joltage = joltage;
+            }
+        }
+    }
+    max_line_joltage
+}
+```
+
+### Key Differences & Concepts
+
+-   **Mutability**: The `max_line_joltage` variable must be declared with `mut` to allow it to be updated.
+-   **Character Handling**: In Rust, a `&str` is a UTF-8 encoded string slice. To access characters by index, it's idiomatic to first convert it into a `Vec<char>` (a vector of characters). `line.chars().collect()` achieves this.
+-   **Looping**: `for i in 0..chars.len()` is Rust's syntax for a `for` loop over a range of numbers, similar to Python.
+-   **String Formatting**: The `format!` macro is used for building strings. It's a powerful and type-safe way to handle string interpolation and concatenation.
+-   **Type Conversion**: `.parse()` is used to convert the string to an integer. The type annotation `: i32` helps the compiler infer what type to parse into. `.unwrap()` is used to get the value out of the `Result` returned by `parse`, crashing if the parse fails.
+
+---
+
+## 6. Elixir Solution
+
+```elixir
+# solution.exs
+
+defp get_max_joltage_for_line(line) do
+  digits = String.graphemes(line)
+  
+  for i <- 0..(length(digits) - 1),
+      j <- (i + 1)..(length(digits) - 1),
+      reduce: 0 do
+    max_joltage ->
+      joltage_str = Enum.at(digits, i) <> Enum.at(digits, j)
+      joltage = String.to_integer(joltage_str)
+      max(joltage, max_joltage)
+  end
+end
+```
+
+### Key Differences & Concepts
+
+-   **`for` Comprehension with `reduce`**: Elixir's `for` is a powerful comprehension that can both generate and reduce data. Here, it's used to iterate through all pairs of indices (`i` and `j`).
+-   **`reduce: 0`**: This option transforms the `for` from a generator into a reducer. `0` is the initial value of the accumulator (`max_joltage`).
+-   **Accumulator**: In each iteration, the block `do max_joltage -> ... end` is executed. The value returned by this block becomes the new value of `max_joltage` for the next iteration. This is a purely functional way to achieve the same result as a mutable `max_line_joltage` variable.
+-   **`max/2`**: The `max` function is used to find the greater of the two values, which is more concise than an `if` statement.
+-   **String/Character Handling**: `String.graphemes` splits the string into a list of its characters (grapheme clusters). `Enum.at` is used for indexed access, and `<>` is the string concatenation operator.
